@@ -23,6 +23,7 @@ const label = document.querySelector<NutritionFacts>('#label')!;
 const select = document.querySelector<HTMLSelectElement>('#dataset')!;
 const form = document.querySelector<HTMLFormElement>('#serving-form')!;
 const output = document.querySelector<HTMLOutputElement>('#form-output')!;
+const markup = document.querySelector<HTMLElement>('#markup-preview')!;
 
 for (const dataset of DATASETS) {
   const option = document.createElement('option');
@@ -31,10 +32,18 @@ for (const dataset of DATASETS) {
   select.append(option);
 }
 
-label.src = dataUrl(DATASETS[0].file);
-select.addEventListener('change', () => {
-  label.src = dataUrl(select.value);
-});
+// The authoring markup a consumer would write for the selected dataset. Set via
+// textContent so the angle brackets render as literal text, not parsed HTML.
+const markupFor = (file: string) =>
+  `<nutrition-facts\n  src="data/${file}"\n  name="servings"\n></nutrition-facts>`;
+
+function applyDataset(file: string): void {
+  label.src = dataUrl(file);
+  markup.textContent = markupFor(file);
+}
+
+applyDataset(DATASETS[0].file);
+select.addEventListener('change', () => applyDataset(select.value));
 
 // The element is form-associated, so the surrounding native form posts its
 // serving count with no extra wiring. Log the resulting FormData.
