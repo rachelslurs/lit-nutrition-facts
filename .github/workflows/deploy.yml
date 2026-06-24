@@ -11,10 +11,11 @@ permissions:
   pages: write
   id-token: write
 
-# Only one Pages deploy at a time; let the newest run win.
+# Serialize Pages deploys, but let an in-flight production deploy finish rather
+# than cancelling it mid-publish.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
