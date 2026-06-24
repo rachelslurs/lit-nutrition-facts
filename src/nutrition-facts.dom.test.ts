@@ -72,6 +72,29 @@ describe('<nutrition-facts> render', () => {
     expect(sodiumRow?.querySelector('td.dv')?.textContent).toBe('1%');
   });
 
+  it('exposes full unit names to assistive tech, not the abbreviation', async () => {
+    const el = await mount(cola);
+    const rowFor = (name: string) =>
+      [...el.shadowRoot!.querySelectorAll('tbody tr')].find((tr) =>
+        tr.querySelector('.nutrient-name')?.textContent?.includes(name),
+      )!;
+
+    const sodium = rowFor('Sodium');
+    // The visual "mg" is hidden from assistive tech; the spoken word replaces it.
+    expect(sodium.querySelector('.nutrient-amount [aria-hidden="true"]')?.textContent).toBe('mg');
+    expect(sodium.querySelector('th .visually-hidden')?.textContent?.trim()).toBe('milligrams');
+    expect(rowFor('Total Fat').querySelector('th .visually-hidden')?.textContent?.trim()).toBe(
+      'grams',
+    );
+
+    // Singular when the amount is exactly 1.
+    const single = await mount({ ...cola, total_fat: 1 });
+    const totalFat = [...single.shadowRoot!.querySelectorAll('tbody tr')].find((tr) =>
+      tr.querySelector('.nutrient-name')?.textContent?.includes('Total Fat'),
+    )!;
+    expect(totalFat.querySelector('th .visually-hidden')?.textContent?.trim()).toBe('gram');
+  });
+
   it('gives the region an accessible name from the item', async () => {
     const el = await mount(cola);
     const region = el.shadowRoot!.querySelector('[role="region"]');

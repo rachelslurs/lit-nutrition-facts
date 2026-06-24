@@ -46,6 +46,16 @@ const VITAMIN_ROWS: readonly { key: VitaminKey; label: string }[] = [
   { key: 'iron_dv', label: 'Iron' },
 ];
 
+/**
+ * Spoken forms of the amount units, exposed to assistive tech in place of the
+ * visual abbreviation. A screen reader reading "g" as the letter is unhelpful,
+ * so the abbreviation is hidden and the full word announced instead.
+ */
+const UNIT_NAMES: Record<string, { one: string; many: string }> = {
+  g: { one: 'gram', many: 'grams' },
+  mg: { one: 'milligram', many: 'milligrams' },
+};
+
 /** Detail payload for the `nf-servings-change` event. */
 export interface NfServingsChangeDetail {
   servings: number;
@@ -556,11 +566,15 @@ export class NutritionFacts extends LitElement {
     if (amount == null) return nothing;
 
     const dv = row.dv !== null ? dailyValuePercent(row.dv, amount) : null;
+    const unit = UNIT_NAMES[row.unit];
+    const spokenUnit = unit ? (amount === 1 ? unit.one : unit.many) : row.unit;
     return html`
       <tr class=${row.sub ? 'sub' : ''}>
         <th scope="row">
           <span class="nutrient-name">${row.label}</span
-          ><span class="nutrient-amount">${this.formatAmount(amount)}${row.unit}</span>
+          ><span class="nutrient-amount"
+            >${this.formatAmount(amount)}<span aria-hidden="true">${row.unit}</span></span
+          ><span class="visually-hidden"> ${spokenUnit}</span>
         </th>
         <td class="dv">${dv !== null ? `${dv}%` : ''}</td>
       </tr>
