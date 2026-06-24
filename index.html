@@ -4,11 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>nutrition-facts</title>
+    <meta
+      name="description"
+      content="A small, framework-agnostic nutrition label web component built with Lit."
+    />
   </head>
   <body>
     <main>
       <h1>nutrition-facts</h1>
-      <p>Scaffold ready. The showcase demo arrives in a later step.</p>
+      <p class="tagline">A framework-agnostic nutrition label web component, built with Lit.</p>
+
+      <div class="controls">
+        <label for="dataset">Dataset</label>
+        <select id="dataset"></select>
+        <span class="hint">swaps the element's <code>src</code> attribute</span>
+      </div>
+
+      <form id="serving-form">
+        <nutrition-facts id="label" name="servings">
+          <p slot="footer" class="allergen">Demo data. Not for nutritional guidance.</p>
+        </nutrition-facts>
+
+        <div class="form-row">
+          <button type="submit">Submit serving count</button>
+          <button type="reset">Reset</button>
+        </div>
+      </form>
+
+      <output id="form-output" class="output" aria-live="polite">Submit to see the posted FormData.</output>
+
+      <p class="links"><a href="react/">React consumer demo &rarr;</a></p>
     </main>
+
+    <script type="module" src="/src/demo/vanilla.ts"></script>
   </body>
 </html>
