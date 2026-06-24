@@ -78,7 +78,7 @@ Wrap it in a native `<form>` and the chosen serving count submits as `name=servi
 | `facts` | (none) | `NutritionData \| undefined` | `undefined` | n/a | Data object, property only. Never reflected. Takes precedence over `src`. |
 | `src` | `src` | `string \| undefined` | `undefined` | yes | JSON URL, fetched by the data controller. |
 | `servings` | `servings` | `number` | `1` | yes | Serving multiplier and submitted form value. |
-| `name` | `name` | `string \| undefined` | `undefined` | no | Form field name for the submitted value. |
+| `name` | `name` | `string \| undefined` | `undefined` | yes | Form field name for the submitted value. Reflected so the property and the submission name stay in sync, like a native control. |
 | `min` | `min` | `number` | `0.25` | no | Stepper lower bound. |
 | `max` | `max` | `number` | `99` | no | Stepper upper bound. |
 | `step` | `step` | `number` | `0.25` | no | Stepper increment. |

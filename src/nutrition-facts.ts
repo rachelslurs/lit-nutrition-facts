@@ -72,8 +72,13 @@ export class NutritionFacts extends LitElement {
   /** Serving multiplier and form value driver. */
   @property({ type: Number, reflect: true }) servings = 1;
 
-  /** Form field name used when the element participates in a form. */
-  @property({ type: String }) name?: string;
+  /**
+   * Form field name. Reflected so setting it via the property also writes the
+   * `name` content attribute that form submission keys off, matching native
+   * form controls. The original API table listed this as non-reflecting, but
+   * native-like form participation requires reflection, so this corrects it.
+   */
+  @property({ type: String, reflect: true }) name?: string;
 
   /** Stepper bounds and increment. */
   @property({ type: Number }) min = 0.25;

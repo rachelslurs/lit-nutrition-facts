@@ -359,6 +359,20 @@ describe('<nutrition-facts> form association', () => {
     expect(formValue(el)).toBe('3');
   });
 
+  it('reflects the name property to the attribute so the field submits', async () => {
+    const el = await mount(cola);
+
+    // Submission keys off the name content attribute, so the property must
+    // reflect for an imperatively-set name to participate.
+    el.name = 'servings';
+    await el.updateComplete;
+    expect(el.getAttribute('name')).toBe('servings');
+
+    el.name = undefined;
+    await el.updateComplete;
+    expect(el.hasAttribute('name')).toBe(false);
+  });
+
   it('restores the authored default on form reset', async () => {
     const el = document.createElement('nutrition-facts');
     el.setAttribute('servings', '2');
