@@ -108,7 +108,11 @@ Wrap it in a native `<form>` and the chosen serving count submits as `name=servi
 
 ### Events
 
-`nf-servings-change`: `CustomEvent<{ servings: number; scaledFacts: NutritionData }>`, with `bubbles` and `composed` set. Fired on each committed servings change (on commit, not on every keystroke).
+`nf-servings-change`: `CustomEvent<{ servings: number; scaledFacts: NutritionData }>`, with `bubbles` and `composed` set. Fired on each committed servings change (on commit, not on every keystroke), including a form reset.
+
+### Methods
+
+`reload(): void` re-fetches the current `src`, for example to retry after a load error. It is a no-op when the element is driven by an inline `facts` property.
 
 ### Data precedence
 
@@ -116,11 +120,11 @@ Precedence is temporal, not a fixed winner. If `facts` is set, it wins, the cont
 
 ### Null versus zero
 
-A nutrient value of `null` means "not provided" and its row is omitted. A real `0` is a measured value and renders as "0g". The two are never conflated, including after scaling, where `null` stays `null` and never becomes `0` or `NaN`.
+A nutrient value of `null` means "not provided" and its row is omitted. A real `0` is a measured value and renders as "0g". The two are never conflated, including after scaling, where `null` stays `null` and never becomes `0` or `NaN`. A key omitted entirely from fetched JSON is treated the same as `null`. Data fetched via `src` is validated: a nutrient supplied as a string or a non-finite number is rejected as a schema mismatch and surfaced as an accessible error rather than rendered as garbage.
 
 ### Disabled and form submission
 
-A disabled element is non-interactive and submits nothing, matching native form controls, which the browser excludes from the form entry list. Form reset restores the serving count that was authored on the element (its initial value), not a hardcoded default.
+A disabled element is non-interactive and submits nothing, matching native form controls, which the browser excludes from the form entry list. Form reset restores the serving count that was authored on the element (its initial value), not a hardcoded default. The serving count is clamped to `[min, max]` on every path, including a direct property or attribute assignment, not only the stepper input.
 
 ## Local development
 
