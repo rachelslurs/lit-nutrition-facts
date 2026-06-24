@@ -90,6 +90,13 @@ export class NutritionFacts extends LitElement {
   /** Owns fetching, loading, and error state when driven by `src`. */
   private readonly data = new NutritionDataController(this);
 
+  /** Participate in forms like a native control. */
+  static formAssociated = true;
+  readonly #internals = this.attachInternals();
+
+  /** The serving count to restore on form reset (the authored initial value). */
+  #defaultServings = 1;
+
   static override styles = css`
     :host {
       /* Public theming contract, each with an FDA-label default. */
@@ -332,6 +339,37 @@ export class NutritionFacts extends LitElement {
       // No inline facts: the controller drives display from src.
       void this.data.setSrc(this.src);
     }
+  }
+
+  override firstUpdated(): void {
+    // Capture the authored serving count so form reset restores it (native
+    // reset semantics), rather than hardcoding the property default.
+    this.#defaultServings = this.servings;
+  }
+
+  override updated(changed: PropertyValues<this>): void {
+    if (changed.has('servings') || changed.has('disabled')) {
+      this.#syncFormValue();
+    }
+  }
+
+  /**
+   * Mirror the serving count into the form value. A disabled control submits
+   * nothing, matching native form behavior (disabled fields are excluded from
+   * the form entry list).
+   */
+  #syncFormValue(): void {
+    this.#internals.setFormValue(this.disabled ? null : String(this.servings));
+  }
+
+  /** Native form reset restores the authored serving count. */
+  formResetCallback(): void {
+    this.servings = this.#defaultServings;
+  }
+
+  /** A surrounding fieldset/form disabling us mirrors into the disabled state. */
+  formDisabledCallback(disabled: boolean): void {
+    this.disabled = disabled;
   }
 
   /** Inline facts win; otherwise fall back to whatever the controller fetched. */

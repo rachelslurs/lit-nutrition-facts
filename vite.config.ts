@@ -10,7 +10,9 @@ export default defineConfig({
   base: '/lit-nutrition-facts/',
   test: {
     // Pure logic and controller specs run in node; fetch and AbortController are
-    // global in Node 20+, so no jsdom is needed for the unit suites.
+    // global in Node 20+. Element specs opt into happy-dom per-file via a
+    // docblock. The setup file polyfills attachInternals, which happy-dom lacks.
     environment: 'node',
+    setupFiles: ['./test/setup.ts'],
   },
 });

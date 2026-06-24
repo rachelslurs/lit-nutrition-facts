@@ -163,6 +163,74 @@ describe('<nutrition-facts> serving stepper', () => {
   });
 });
 
+// happy-dom lacks real form-associated-element submission, so these assert the
+// mechanism through the recorded form value (see test/setup.ts). The native
+// <form> round-trip is verified in the browser via the vanilla demo.
+describe('<nutrition-facts> form association', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  const formValue = (el: NutritionFacts) => el.__internals?.formValue ?? null;
+
+  const setServings = async (el: NutritionFacts, value: string) => {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('#servings-input')!;
+    input.value = value;
+    input.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+  };
+
+  it('sets the default serving count as the form value without interaction', async () => {
+    const el = await mount(cola);
+    expect(formValue(el)).toBe('1');
+  });
+
+  it('updates the form value on a committed change', async () => {
+    const el = await mount(cola);
+    await setServings(el, '3');
+    expect(formValue(el)).toBe('3');
+  });
+
+  it('restores the authored default on form reset', async () => {
+    const el = document.createElement('nutrition-facts');
+    el.setAttribute('servings', '2');
+    el.facts = cola;
+    document.body.append(el);
+    await el.updateComplete;
+    expect(el.servings).toBe(2);
+
+    await setServings(el, '5');
+    expect(el.servings).toBe(5);
+
+    el.formResetCallback();
+    await el.updateComplete;
+    expect(el.servings).toBe(2);
+    expect(formValue(el)).toBe('2');
+  });
+
+  it('submits nothing while disabled, matching native controls', async () => {
+    const el = document.createElement('nutrition-facts');
+    el.setAttribute('disabled', '');
+    el.facts = cola;
+    document.body.append(el);
+    await el.updateComplete;
+
+    expect(el.disabled).toBe(true);
+    expect(formValue(el)).toBeNull();
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('#servings-input')!.disabled).toBe(true);
+  });
+
+  it('mirrors a form-level disable through formDisabledCallback', async () => {
+    const el = await mount(cola);
+    expect(formValue(el)).toBe('1');
+
+    el.formDisabledCallback(true);
+    await el.updateComplete;
+    expect(el.disabled).toBe(true);
+    expect(formValue(el)).toBeNull();
+  });
+});
+
 describe('<nutrition-facts> src and facts precedence', () => {
   const originalFetch = globalThis.fetch;
 
