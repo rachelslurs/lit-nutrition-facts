@@ -11,8 +11,8 @@ import type { NutritionFacts } from '../nutrition-facts';
  * swaps the element's `src`, which the data controller re-fetches reactively.
  */
 const DATASETS = [
-  { label: 'Cherry Cola (null nutrients, low %DV)', file: 'cola-cherry.json' },
-  { label: 'Honey Almond Granola (high %DV)', file: 'granola-honey-almond.json' },
+  { label: 'Cherry Cola', file: 'cola-cherry.json' },
+  { label: 'Honey Almond Granola', file: 'granola-honey-almond.json' },
   { label: 'Plain Whole Milk Yogurt', file: 'yogurt-plain-whole-milk.json' },
 ];
 

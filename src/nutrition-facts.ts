@@ -113,7 +113,7 @@ export class NutritionFacts extends LitElement {
       box-sizing: border-box;
       max-width: var(--_max);
       color: var(--_text);
-      background: var(--_bg);
+      background: transparent;
       font-family: var(--_font);
       line-height: 1.3;
     }
@@ -139,7 +139,7 @@ export class NutritionFacts extends LitElement {
     }
 
     .item-name {
-      margin: 0.15rem 0 0;
+      margin: 0 0 0.35rem;
       font-size: 0.95rem;
       font-weight: 700;
       overflow-wrap: anywhere;
@@ -228,8 +228,12 @@ export class NutritionFacts extends LitElement {
 
     table.nutrients {
       width: 100%;
+      table-layout: auto;
       border-collapse: collapse;
       font-size: 0.85rem;
+    }
+    .nutrients col.col-dv {
+      width: 1%;
     }
     .nutrients th,
     .nutrients td {
@@ -240,28 +244,40 @@ export class NutritionFacts extends LitElement {
     }
     .nutrients thead th {
       border-top: 0;
+      padding-bottom: 0.1rem;
     }
     .nutrients .dv-head {
       text-align: right;
       font-size: 0.8rem;
       font-weight: 700;
+      line-height: 1.15;
+      white-space: nowrap;
     }
     .nutrients th[scope='row'] {
+      font-weight: 400;
+    }
+    .nutrients th[scope='row'] .nutrient-name {
       font-weight: 700;
     }
     .nutrients tr.sub th[scope='row'] {
-      font-weight: 400;
       padding-left: 1.25rem;
     }
-    .nutrients td.amount {
-      width: 1%;
+    .nutrients tr.sub th[scope='row'] .nutrient-name {
+      font-weight: 400;
+    }
+    .nutrients .nutrient-amount {
+      font-weight: 400;
       white-space: nowrap;
-      padding-left: 0.35rem;
+    }
+    .nutrients .nutrient-name + .nutrient-amount::before {
+      content: ' ';
+      white-space: pre;
     }
     .nutrients td.dv {
       text-align: right;
       font-weight: 700;
       white-space: nowrap;
+      padding-left: 0.5rem;
     }
 
     .vitamins {
@@ -279,6 +295,11 @@ export class NutritionFacts extends LitElement {
     }
     .vitamins li:first-child {
       border-top: 0;
+    }
+    .vitamins .vitamin-dv {
+      text-align: right;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .footnote {
@@ -366,7 +387,7 @@ export class NutritionFacts extends LitElement {
       :host {
         max-width: none;
         color: #000;
-        background: #fff;
+        background: transparent;
       }
       .label {
         background: #fff;
@@ -532,8 +553,10 @@ export class NutritionFacts extends LitElement {
     const dv = row.dv !== null ? dailyValuePercent(row.dv, amount) : null;
     return html`
       <tr class=${row.sub ? 'sub' : ''}>
-        <th scope="row">${row.label}</th>
-        <td class="amount">${this.formatAmount(amount)}${row.unit}</td>
+        <th scope="row">
+          <span class="nutrient-name">${row.label}</span
+          ><span class="nutrient-amount">${this.formatAmount(amount)}${row.unit}</span>
+        </th>
         <td class="dv">${dv !== null ? `${dv}%` : ''}</td>
       </tr>
     `;
@@ -586,6 +609,11 @@ export class NutritionFacts extends LitElement {
     const facts = scaleFacts(base, this.servings);
 
     return html`
+      <p class="item-name" part="item-name">
+        ${facts.item_name}${facts.brand_name
+          ? html` <span class="brand">${facts.brand_name}</span>`
+          : nothing}
+      </p>
       <section
         class="label"
         part="label"
@@ -594,11 +622,6 @@ export class NutritionFacts extends LitElement {
       >
         <header class="header">
           <h2 class="title" part="title">Nutrition Facts</h2>
-          <p class="item-name">
-            ${facts.item_name}${facts.brand_name
-              ? html` <span class="brand">${facts.brand_name}</span>`
-              : nothing}
-          </p>
           <dl class="serving-meta">
             <div class="serving-row" part="serving-size">
               <dt>Serving Size</dt>
@@ -634,12 +657,15 @@ export class NutritionFacts extends LitElement {
 
         <table class="nutrients" part="nutrient-table">
           <caption class="visually-hidden">
-            Nutrition facts per serving
+            Nutrition facts per serving; percent daily value in the right column
           </caption>
+          <colgroup>
+            <col />
+            <col class="col-dv" />
+          </colgroup>
           <thead>
             <tr>
-              <th scope="col" class="visually-hidden">Nutrient</th>
-              <th scope="col" class="visually-hidden">Amount per serving</th>
+              <th scope="col" class="visually-hidden">Nutrient and amount per serving</th>
               <th scope="col" class="dv-head">% Daily Value*</th>
             </tr>
           </thead>
@@ -648,7 +674,7 @@ export class NutritionFacts extends LitElement {
           </tbody>
         </table>
 
-          <hr class="rule thick" />
+          <hr class="rule medium" />
 
           ${this.renderVitamins(facts)}
         </div>

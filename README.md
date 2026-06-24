@@ -100,7 +100,7 @@ Wrap it in a native `<form>` and the chosen serving count submits as `name=servi
 
 ### Parts
 
-`label`, `title`, `serving-size`, `calories`, `nutrient-table`, `stepper`. Structural hooks for external styling, not every row.
+`item-name`, `label`, `title`, `serving-size`, `calories`, `nutrient-table`, `stepper`. Structural hooks for external styling, not every row.
 
 ### Slots
 

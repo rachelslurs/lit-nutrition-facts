@@ -52,12 +52,6 @@ form {
   margin: 0;
 }
 
-.allergen {
-  margin: 0;
-  font-style: italic;
-  color: #555;
-}
-
 .form-row {
   display: flex;
   gap: 0.5rem;

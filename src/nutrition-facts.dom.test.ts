@@ -39,8 +39,8 @@ function rowMap(el: NutritionFacts): Record<string, { amount: string; dv: string
   const root = el.shadowRoot!;
   const out: Record<string, { amount: string; dv: string }> = {};
   for (const tr of root.querySelectorAll('tbody tr')) {
-    const name = tr.querySelector('th[scope="row"]')?.textContent?.trim() ?? '';
-    const amount = tr.querySelector('td.amount')?.textContent?.trim() ?? '';
+    const name = tr.querySelector('th[scope="row"] .nutrient-name')?.textContent?.trim() ?? '';
+    const amount = tr.querySelector('th[scope="row"] .nutrient-amount')?.textContent?.trim() ?? '';
     const dv = tr.querySelector('td.dv')?.textContent?.trim() ?? '';
     out[name] = { amount, dv };
   }
@@ -56,8 +56,20 @@ describe('<nutrition-facts> render', () => {
     const el = await mount(cola);
     const tables = el.shadowRoot!.querySelectorAll('table');
     expect(tables).toHaveLength(1);
-    expect(el.shadowRoot!.querySelectorAll('th[scope="col"]')).toHaveLength(3);
+    expect(el.shadowRoot!.querySelector('.dv-head')?.textContent).toContain('% Daily Value');
+    expect(el.shadowRoot!.querySelectorAll('th[scope="col"]')).toHaveLength(2);
     expect(el.shadowRoot!.querySelector('caption')).not.toBeNull();
+  });
+
+  it('places each nutrient amount beside its name with % daily value flush right', async () => {
+    const el = await mount(cola);
+    const rows = rowMap(el);
+    expect(rows['Sodium']).toEqual({ amount: '25mg', dv: '1%' });
+    const sodiumRow = [...el.shadowRoot!.querySelectorAll('tbody tr')].find((tr) =>
+      tr.querySelector('.nutrient-name')?.textContent?.includes('Sodium'),
+    );
+    expect(sodiumRow?.querySelector('.nutrient-amount')?.textContent).toBe('25mg');
+    expect(sodiumRow?.querySelector('td.dv')?.textContent).toBe('1%');
   });
 
   it('gives the region an accessible name from the item', async () => {
@@ -128,6 +140,13 @@ describe('<nutrition-facts> render', () => {
     expect(first?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Vitamin A 0%');
   });
 
+  it('renders the product name above the bordered label', async () => {
+    const el = await mount(cola);
+    const name = el.shadowRoot!.querySelector('.item-name');
+    expect(name?.textContent).toContain('Cola, Cherry');
+    expect(el.shadowRoot!.querySelector('.label')?.contains(name ?? null)).toBe(false);
+  });
+
   it('escapes user-ish strings rather than injecting markup', async () => {
     const el = await mount({ ...cola, item_name: '<img src=x onerror=alert(1)>' });
     expect(el.shadowRoot!.querySelector('img')).toBeNull();
@@ -147,7 +166,15 @@ describe('<nutrition-facts> theming, parts, slot, and hide-stepper', () => {
     const parts = [...el.shadowRoot!.querySelectorAll('[part]')].map((n) =>
       n.getAttribute('part'),
     );
-    for (const p of ['label', 'title', 'serving-size', 'calories', 'nutrient-table', 'stepper']) {
+    for (const p of [
+      'item-name',
+      'label',
+      'title',
+      'serving-size',
+      'calories',
+      'nutrient-table',
+      'stepper',
+    ]) {
       expect(parts).toContain(p);
     }
   });
