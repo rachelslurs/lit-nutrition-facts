@@ -99,6 +99,70 @@ describe('<nutrition-facts> render', () => {
   });
 });
 
+describe('<nutrition-facts> serving stepper', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  const stepperInput = (el: NutritionFacts) =>
+    el.shadowRoot!.querySelector<HTMLInputElement>('#servings-input')!;
+
+  async function commit(el: NutritionFacts, value: string): Promise<void> {
+    const input = stepperInput(el);
+    input.value = value;
+    input.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+  }
+
+  it('scales displayed values live on a committed change', async () => {
+    const el = await mount(cola);
+    await commit(el, '2');
+
+    expect(el.servings).toBe(2);
+    const rows = rowMap(el);
+    expect(rows['Sodium'].amount).toBe('50mg');
+    expect(rows['Total Carbohydrate'].amount).toBe('56g');
+  });
+
+  it('fires nf-servings-change (bubbling, composed) with scaled detail', async () => {
+    const el = await mount(cola);
+    const events: CustomEvent[] = [];
+    document.addEventListener('nf-servings-change', (e) => events.push(e as CustomEvent));
+
+    await commit(el, '3');
+
+    expect(events).toHaveLength(1);
+    expect(events[0].bubbles).toBe(true);
+    expect(events[0].composed).toBe(true);
+    expect(events[0].detail.servings).toBe(3);
+    expect(events[0].detail.scaledFacts.sodium).toBe(75);
+  });
+
+  it('clamps above max and below min', async () => {
+    const el = await mount(cola);
+
+    await commit(el, '500');
+    expect(el.servings).toBe(99);
+    expect(stepperInput(el).value).toBe('99');
+
+    await commit(el, '0');
+    expect(el.servings).toBe(0.25);
+  });
+
+  it('keeps the current value on empty or non-numeric input', async () => {
+    const el = await mount(cola);
+    await commit(el, '2');
+    expect(el.servings).toBe(2);
+
+    await commit(el, '');
+    expect(el.servings).toBe(2);
+    expect(stepperInput(el).value).toBe('2');
+
+    await commit(el, 'abc');
+    expect(el.servings).toBe(2);
+  });
+});
+
 describe('<nutrition-facts> src and facts precedence', () => {
   const originalFetch = globalThis.fetch;
 

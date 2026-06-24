@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { NutritionData } from './types';
-import { dailyValuePercent, type DailyValueKey } from './scale';
+import { scaleFacts, dailyValuePercent, type DailyValueKey } from './scale';
 import { NutritionDataController } from './nutrition-data-controller';
 
 /** Numeric nutrient fields that carry a measured amount. */
@@ -45,6 +45,12 @@ const VITAMIN_ROWS: readonly { key: VitaminKey; label: string }[] = [
   { key: 'calcium_dv', label: 'Calcium' },
   { key: 'iron_dv', label: 'Iron' },
 ];
+
+/** Detail payload for the `nf-servings-change` event. */
+export interface NfServingsChangeDetail {
+  servings: number;
+  scaledFacts: NutritionData;
+}
 
 /**
  * `<nutrition-facts>` renders an FDA-style nutrition label from declarative data.
@@ -158,6 +164,31 @@ export class NutritionFacts extends LitElement {
     }
     .rule.medium {
       border-top-width: 4px;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin: 0.4rem 0;
+      font-size: 0.85rem;
+    }
+    .stepper label {
+      font-weight: 700;
+    }
+    .stepper input {
+      inline-size: 5rem;
+      font: inherit;
+      padding: 0.2rem 0.35rem;
+      color: var(--_text);
+      background: var(--_bg);
+      border: var(--_thin) solid var(--_border);
+      border-radius: 2px;
+    }
+    .stepper input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
     .calories {
@@ -308,6 +339,67 @@ export class NutritionFacts extends LitElement {
     return this.facts ?? this.data.facts;
   }
 
+  /**
+   * Coerce raw input into a valid serving count. Empty or non-numeric input
+   * keeps the current value; out-of-range values clamp to [min, max].
+   */
+  private clampServings(raw: string): number {
+    const parsed = Number.parseFloat(raw);
+    if (!Number.isFinite(parsed)) return this.servings;
+    return Math.min(this.max, Math.max(this.min, parsed));
+  }
+
+  /** Handle a committed (not per-keystroke) change from the stepper input. */
+  private onServingsCommit(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const next = this.clampServings(input.value);
+    // Reflect the clamped value back so empty/garbage/out-of-range input snaps.
+    input.value = String(next);
+    if (next === this.servings) return;
+    this.servings = next;
+    this.commitServings();
+  }
+
+  /** Fire nf-servings-change with the freshly scaled data. */
+  private commitServings(): void {
+    const base = this.resolveFacts();
+    if (!base) return;
+    const detail: NfServingsChangeDetail = {
+      servings: this.servings,
+      scaledFacts: scaleFacts(base, this.servings),
+    };
+    this.dispatchEvent(
+      new CustomEvent<NfServingsChangeDetail>('nf-servings-change', {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private renderStepper() {
+    // The <label> lives inside the shadow root with its <input>: native label
+    // association does not cross the shadow boundary, so an outside <label for>
+    // would never connect to this control.
+    return html`
+      <div class="stepper" part="stepper">
+        <label for="servings-input">Servings</label>
+        <input
+          id="servings-input"
+          type="number"
+          inputmode="decimal"
+          .value=${String(this.servings)}
+          min=${this.min}
+          max=${this.max}
+          step=${this.step}
+          ?disabled=${this.disabled}
+          aria-label="Number of servings"
+          @change=${this.onServingsCommit}
+        />
+      </div>
+    `;
+  }
+
   private formatAmount(value: number): string {
     return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
   }
@@ -347,25 +439,29 @@ export class NutritionFacts extends LitElement {
   }
 
   override render() {
-    const facts = this.resolveFacts();
+    const base = this.resolveFacts();
 
     // Controller status only matters when src is driving and there is nothing
     // better to show; inline facts always win above.
-    if (!facts && this.data.error) {
+    if (!base && this.data.error) {
       return html`<section class="label" part="label">
         <p class="status error" role="alert">${this.data.error}</p>
       </section>`;
     }
-    if (!facts && this.data.loading) {
+    if (!base && this.data.loading) {
       return html`<section class="label" part="label" aria-busy="true">
         <p class="status" role="status">Loading nutrition data…</p>
       </section>`;
     }
-    if (!facts) {
+    if (!base) {
       return html`<section class="label empty" part="label">
         <p>No nutrition data provided.</p>
       </section>`;
     }
+
+    // Display values are the per-serving data scaled by the stepper. Metadata
+    // (names, serving size, servings per container) is left untouched.
+    const facts = scaleFacts(base, this.servings);
 
     return html`
       <section
@@ -390,6 +486,8 @@ export class NutritionFacts extends LitElement {
             <span>${facts.servings_per_container}</span>
           </div>
         </header>
+
+        ${this.hideStepper ? nothing : this.renderStepper()}
 
         <hr class="rule thick" />
 
