@@ -166,21 +166,19 @@ export class NutritionFacts extends LitElement {
     }
 
     .serving-meta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      column-gap: 0.5rem;
       margin: 0.35rem 0 0;
       font-size: 0.85rem;
-    }
-    .serving-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin: 0;
-    }
-    .serving-row + .serving-row {
-      margin-top: 0;
     }
     .serving-meta dt,
     .serving-meta dd {
       margin: 0;
+    }
+    .serving-meta dd {
+      justify-self: end;
+      text-align: right;
     }
 
     .rule {
@@ -570,13 +568,15 @@ export class NutritionFacts extends LitElement {
     const spokenUnit = unit ? (amount === 1 ? unit.one : unit.many) : row.unit;
     return html`
       <tr class=${row.sub ? 'sub' : ''}>
-        <th scope="row">
+        <th scope="row" id="nf-row-${row.key}">
           <span class="nutrient-name">${row.label}</span
           ><span class="nutrient-amount"
             >${this.formatAmount(amount)}<span aria-hidden="true">${row.unit}</span></span
           ><span class="visually-hidden"> ${spokenUnit}</span>
         </th>
-        <td class="dv">${dv !== null ? `${dv}%` : ''}</td>
+        <!-- Explicit row + column header association so the % cell announces both
+             its nutrient and "% Daily Value", not just the bare number. -->
+        <td class="dv" headers="nf-row-${row.key} nf-dv-head">${dv !== null ? `${dv}%` : ''}</td>
       </tr>
     `;
   }
@@ -641,15 +641,14 @@ export class NutritionFacts extends LitElement {
       >
         <header class="header">
           <h2 class="title" part="title">Nutrition Facts</h2>
-          <dl class="serving-meta">
-            <div class="serving-row" part="serving-size">
-              <dt>Serving Size</dt>
-              <dd>${facts.serving_size_qty} ${facts.serving_size_unit}</dd>
-            </div>
-            <div class="serving-row">
-              <dt>Servings Per Container</dt>
-              <dd>${facts.servings_per_container}</dd>
-            </div>
+          <!-- Description list per WCAG technique H40: dt/dd are direct children
+               of the dl (no wrapper divs), each term immediately followed by its
+               value. Grid lays each pair out side by side. -->
+          <dl class="serving-meta" part="serving-size">
+            <dt>Serving Size</dt>
+            <dd>${facts.serving_size_qty} ${facts.serving_size_unit}</dd>
+            <dt>Servings Per Container</dt>
+            <dd>${facts.servings_per_container}</dd>
           </dl>
         </header>
 
@@ -685,7 +684,9 @@ export class NutritionFacts extends LitElement {
           <thead>
             <tr>
               <th scope="col" class="visually-hidden">Nutrient and amount per serving</th>
-              <th scope="col" class="dv-head">% Daily Value*</th>
+              <th scope="col" id="nf-dv-head" class="dv-head">
+                % Daily Value<span aria-hidden="true">*</span>
+              </th>
             </tr>
           </thead>
           <tbody>

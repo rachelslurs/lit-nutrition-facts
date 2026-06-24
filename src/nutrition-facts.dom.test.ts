@@ -95,6 +95,21 @@ describe('<nutrition-facts> render', () => {
     expect(totalFat.querySelector('th .visually-hidden')?.textContent?.trim()).toBe('gram');
   });
 
+  it('associates each % daily value cell with its nutrient row and the column header', async () => {
+    const el = await mount(cola);
+
+    const dvHead = el.shadowRoot!.querySelector('.dv-head');
+    expect(dvHead?.id).toBe('nf-dv-head');
+    // The footnote asterisk is hidden so the header reads as "% Daily Value".
+    expect(dvHead?.querySelector('[aria-hidden="true"]')?.textContent).toBe('*');
+
+    const sodium = [...el.shadowRoot!.querySelectorAll('tbody tr')].find((tr) =>
+      tr.querySelector('.nutrient-name')?.textContent?.includes('Sodium'),
+    )!;
+    expect(sodium.querySelector('th[scope="row"]')?.id).toBe('nf-row-sodium');
+    expect(sodium.querySelector('td.dv')?.getAttribute('headers')).toBe('nf-row-sodium nf-dv-head');
+  });
+
   it('gives the region an accessible name from the item', async () => {
     const el = await mount(cola);
     const region = el.shadowRoot!.querySelector('[role="region"]');
@@ -136,18 +151,20 @@ describe('<nutrition-facts> render', () => {
     expect(live!.querySelector('.stepper')).toBeNull();
   });
 
-  it('pairs serving metadata with definition lists', async () => {
+  it('pairs serving metadata in a description list with direct dt/dd (WCAG H40)', async () => {
     const el = await mount(cola);
     const dl = el.shadowRoot!.querySelector('dl.serving-meta');
     expect(dl).not.toBeNull();
-    const pairs = [...dl!.querySelectorAll('.serving-row')].map((row) => ({
-      term: row.querySelector('dt')?.textContent?.trim(),
-      def: row.querySelector('dd')?.textContent?.trim(),
-    }));
-    expect(pairs).toEqual([
-      { term: 'Serving Size', def: '8 fl oz' },
-      { term: 'Servings Per Container', def: '6' },
-    ]);
+    // dt/dd are direct children of the dl (no wrapper divs), per technique H40.
+    for (const child of dl!.children) {
+      expect(['DT', 'DD']).toContain(child.tagName);
+    }
+    const terms = [...dl!.querySelectorAll('dt')].map((dt) => dt.textContent?.trim());
+    const defs = [...dl!.querySelectorAll('dd')].map((dd) =>
+      dd.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(terms).toEqual(['Serving Size', 'Servings Per Container']);
+    expect(defs).toEqual(['8 fl oz', '6']);
   });
 
   it('pairs calories label and value for assistive text', async () => {
