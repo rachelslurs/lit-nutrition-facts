@@ -44,13 +44,14 @@ const PER_SERVING_DV_KEYS = [
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 const roundInt = (n: number): number => Math.round(n);
 
-/** Scale a nullable amount while preserving null ("not provided") exactly. */
+/** Scale a nullable amount while preserving "not provided" exactly. */
 function scaleNullable(
-  value: number | null,
+  value: number | null | undefined,
   servings: number,
   round: (n: number) => number,
 ): number | null {
-  return value === null ? null : round(value * servings);
+  // null AND undefined both mean "not provided" and must stay omitted, never NaN.
+  return value == null ? null : round(value * servings);
 }
 
 /**
@@ -85,8 +86,8 @@ export function scaleFacts(facts: NutritionData, servings: number): NutritionDat
  */
 export function dailyValuePercent(
   key: DailyValueKey,
-  amount: number | null,
+  amount: number | null | undefined,
 ): number | null {
-  if (amount === null) return null;
+  if (amount == null) return null;
   return Math.round((amount / DAILY_VALUES[key]) * 100);
 }

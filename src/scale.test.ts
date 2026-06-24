@@ -42,6 +42,15 @@ describe('scaleFacts', () => {
     expect(Number.isNaN(s.total_fat)).toBe(false);
   });
 
+  it('treats an omitted (undefined) nutrient as not provided, never NaN', () => {
+    const withoutSodium: NutritionData = { ...cola };
+    delete (withoutSodium as Partial<NutritionData>).sodium;
+
+    const s = scaleFacts(withoutSodium, 3);
+    expect(s.sodium).toBeNull();
+    expect(Number.isNaN(s.sodium as number)).toBe(false);
+  });
+
   it('multiplies per-serving amounts but leaves metadata untouched', () => {
     const s = scaleFacts(cola, 2);
 

@@ -45,15 +45,42 @@ export interface NutritionData {
  * turn schema-mismatched JSON into an accessible error rather than a broken
  * render.
  */
+/**
+ * Optional numeric nutrient fields. Each may be omitted or null ("not
+ * provided"); when present it must be a finite number. A string or non-finite
+ * value is treated as a schema mismatch rather than silently coerced.
+ */
+const OPTIONAL_NUTRIENT_KEYS = [
+  'calories_from_fat',
+  'total_fat',
+  'saturated_fat',
+  'cholesterol',
+  'sodium',
+  'total_carbohydrate',
+  'dietary_fiber',
+  'sugars',
+  'protein',
+  'vitamin_a_dv',
+  'vitamin_c_dv',
+  'calcium_dv',
+  'iron_dv',
+] as const;
+
+const isFiniteNumber = (x: unknown): x is number =>
+  typeof x === 'number' && Number.isFinite(x);
+
+const isOptionalNutrient = (x: unknown): boolean =>
+  x === null || x === undefined || isFiniteNumber(x);
+
 export function isNutritionData(value: unknown): value is NutritionData {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
     typeof v.item_name === 'string' &&
-    typeof v.calories === 'number' &&
-    Number.isFinite(v.calories) &&
-    typeof v.servings_per_container === 'number' &&
-    typeof v.serving_size_qty === 'number' &&
-    typeof v.serving_size_unit === 'string'
+    isFiniteNumber(v.calories) &&
+    isFiniteNumber(v.servings_per_container) &&
+    isFiniteNumber(v.serving_size_qty) &&
+    typeof v.serving_size_unit === 'string' &&
+    OPTIONAL_NUTRIENT_KEYS.every((key) => isOptionalNutrient(v[key]))
   );
 }
