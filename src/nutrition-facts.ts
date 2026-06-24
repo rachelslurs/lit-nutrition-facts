@@ -150,15 +150,22 @@ export class NutritionFacts extends LitElement {
       opacity: 0.8;
     }
 
-    .serving {
+    .serving-meta {
+      margin: 0.35rem 0 0;
+      font-size: 0.85rem;
+    }
+    .serving-row {
       display: flex;
       justify-content: space-between;
       gap: 0.5rem;
-      font-size: 0.85rem;
+      margin: 0;
     }
-
-    .serving:first-of-type {
-      margin-top: 0.35rem;
+    .serving-row + .serving-row {
+      margin-top: 0;
+    }
+    .serving-meta dt,
+    .serving-meta dd {
+      margin: 0;
     }
 
     .rule {
@@ -516,8 +523,10 @@ export class NutritionFacts extends LitElement {
         ${items.map(
           (v) => html`
             <li>
-              <span class="vitamin-name">${v.label}</span>
-              <span class="vitamin-dv">${v.value}%</span>
+              <span class="vitamin-name" aria-hidden="true">${v.label}</span>
+              <span class="vitamin-dv">
+                <span class="visually-hidden">${v.label} </span>${v.value}%
+              </span>
             </li>
           `,
         )}
@@ -564,26 +573,30 @@ export class NutritionFacts extends LitElement {
               ? html` <span class="brand">${facts.brand_name}</span>`
               : nothing}
           </p>
-          <div class="serving" part="serving-size">
-            <span>Serving Size</span>
-            <span>${facts.serving_size_qty} ${facts.serving_size_unit}</span>
-          </div>
-          <div class="serving">
-            <span>Servings Per Container</span>
-            <span>${facts.servings_per_container}</span>
-          </div>
+          <dl class="serving-meta">
+            <div class="serving-row" part="serving-size">
+              <dt>Serving Size</dt>
+              <dd>${facts.serving_size_qty} ${facts.serving_size_unit}</dd>
+            </div>
+            <div class="serving-row">
+              <dt>Servings Per Container</dt>
+              <dd>${facts.servings_per_container}</dd>
+            </div>
+          </dl>
         </header>
 
         ${this.hideStepper ? nothing : this.renderStepper()}
 
         <hr class="rule thick" />
 
-        <!-- Scoped to the numbers that change with servings, so a stepper
-             change announces the updated totals without re-reading the labels. -->
-        <div class="values" aria-live="polite">
+        <!-- Scoped to values that change with servings. aria-atomic keeps label/value
+             pairs intact when assistive tech announces diffs. -->
+        <div class="values" aria-live="polite" aria-atomic="true">
           <div class="calories" part="calories">
-          <span class="calories-label">Calories</span>
-          <span class="calories-value">${this.formatAmount(facts.calories)}</span>
+          <span class="calories-label" aria-hidden="true">Calories</span>
+          <span class="calories-value">
+            <span class="visually-hidden">Calories </span>${this.formatAmount(facts.calories)}
+          </span>
           ${facts.calories_from_fat !== null
             ? html`<span class="calories-fat"
                 >Calories from Fat ${this.formatAmount(facts.calories_from_fat)}</span

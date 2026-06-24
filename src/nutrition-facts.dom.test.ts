@@ -83,21 +83,49 @@ describe('<nutrition-facts> render', () => {
 
   it('renders vitamins as a non-table list, omitting null entries', async () => {
     const el = await mount(cola);
-    const items = [...el.shadowRoot!.querySelectorAll('.vitamins li')].map((li) =>
-      li.textContent?.replace(/\s+/g, ' ').trim(),
+    const items = [...el.shadowRoot!.querySelectorAll('.vitamins li .vitamin-dv')].map((span) =>
+      span.textContent?.replace(/\s+/g, ' ').trim(),
     );
     expect(items).toContain('Vitamin A 0%');
     expect(items).toHaveLength(4);
   });
 
-  it('scopes a polite live region to the changing values, not the controls', async () => {
+  it('scopes a polite, atomic live region to the changing values, not the controls', async () => {
     const el = await mount(cola);
     const live = el.shadowRoot!.querySelector('[aria-live="polite"]');
     expect(live).not.toBeNull();
+    expect(live!.getAttribute('aria-atomic')).toBe('true');
     expect(live!.querySelector('table')).not.toBeNull();
     expect(live!.querySelector('.calories')).not.toBeNull();
     // The stepper control stays outside the live region so it is not chatty.
     expect(live!.querySelector('.stepper')).toBeNull();
+  });
+
+  it('pairs serving metadata with definition lists', async () => {
+    const el = await mount(cola);
+    const dl = el.shadowRoot!.querySelector('dl.serving-meta');
+    expect(dl).not.toBeNull();
+    const pairs = [...dl!.querySelectorAll('.serving-row')].map((row) => ({
+      term: row.querySelector('dt')?.textContent?.trim(),
+      def: row.querySelector('dd')?.textContent?.trim(),
+    }));
+    expect(pairs).toEqual([
+      { term: 'Serving Size', def: '8 fl oz' },
+      { term: 'Servings Per Container', def: '6' },
+    ]);
+  });
+
+  it('pairs calories label and value for assistive text', async () => {
+    const el = await mount(cola);
+    const value = el.shadowRoot!.querySelector('.calories-value');
+    expect(value?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Calories 100');
+    expect(value?.querySelector('.visually-hidden')?.textContent).toBe('Calories ');
+  });
+
+  it('pairs each vitamin line for assistive text', async () => {
+    const el = await mount(cola);
+    const first = el.shadowRoot!.querySelector('.vitamins li .vitamin-dv');
+    expect(first?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Vitamin A 0%');
   });
 
   it('escapes user-ish strings rather than injecting markup', async () => {

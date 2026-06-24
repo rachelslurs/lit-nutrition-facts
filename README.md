@@ -22,7 +22,7 @@ Three things from the 2014 version aged in instructive ways.
 
 A nutrition label looks like a table, so the lazy move is to wrap the whole thing in one `<table>` and walk away. Don't. A screen reader then reads the serving header, the calorie count, and the nutrient rows as one undifferentiated grid, which is nonsense.
 
-Only part of the label is actually tabular: the nutrient rows, where each row pairs a nutrient with an amount and a percent daily value. That part gets a real table, with a caption and proper row and column headers. The rest (serving size, calories, the heavy rules) is content, and it's structured as content. The serving stepper is a native number input with a real label, and that label lives inside the shadow root with the input, because label association does not cross the shadow boundary.
+Only part of the label is actually tabular: the nutrient rows, where each row pairs a nutrient with an amount and a percent daily value. That part gets a real table, with a caption and proper row and column headers. Serving metadata uses a definition list (`<dl>`). Calories and vitamins pair labels with values through visually hidden prefixes inside the live region, and that region is `aria-atomic` so assistive tech announces each update as a whole. The rest (the heavy rules) is content, and it's structured as content. The serving stepper is a native number input with a real label, and that label lives inside the shadow root with the input, because label association does not cross the shadow boundary.
 
 It's a small component. It still has opinions.
 
@@ -150,7 +150,8 @@ Two things to confirm before the first deploy:
 
 What is verified automatically (run `npm test`):
 
-- The label uses a single real table scoped to the nutrient grid, with a caption and column and row headers; the serving and calorie header is content, not table markup.
+- The label uses a single real table scoped to the nutrient grid, with a caption and column and row headers; serving metadata is a definition list; the serving and calorie header is content, not table markup.
+- The live region that holds scaled values is `aria-live="polite"` and `aria-atomic="true"`; calories and vitamin lines include visually hidden label prefixes so announcements pair names with amounts.
 - The region carries an accessible name ("Nutrition Facts for [item name]").
 - Null nutrient rows are omitted while a real `0` is kept, and user-ish strings (`item_name`, `ingredients`) are escaped rather than injected.
 - The serving stepper scales values, clamps to range, ignores empty or non-numeric input, and fires `nf-servings-change` with the scaled data.
