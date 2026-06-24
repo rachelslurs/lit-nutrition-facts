@@ -41,7 +41,7 @@ Same component, twelve years apart. The interesting part isn't that I rewrote it
 This repo is a portfolio piece rather than a published package, so use it from source:
 
 ```sh
-git clone https://github.com/rachelcantor/lit-nutrition-facts.git
+git clone https://github.com/rachelslurs/lit-nutrition-facts.git
 cd lit-nutrition-facts
 npm install
 ```
