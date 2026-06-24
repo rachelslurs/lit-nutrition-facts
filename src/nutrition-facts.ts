@@ -481,7 +481,6 @@ export class NutritionFacts extends LitElement {
           max=${this.max}
           step=${this.step}
           ?disabled=${this.disabled}
-          aria-label="Number of servings"
           @change=${this.onServingsCommit}
         />
       </div>

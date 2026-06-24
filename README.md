@@ -159,7 +159,7 @@ What is verified automatically (run `npm test`):
 Manual checks to run in a real browser (these need a human and were not executed in the headless build environment, so the structure is built to pass them rather than claimed as passed):
 
 - Keyboard only: tab to the stepper and the dataset picker, confirm a visible focus outline and that the stepper steps by `0.25`.
-- Screen reader (VoiceOver or NVDA): confirm the live region announces updated totals when servings change, the nutrient table reads with its row and column headers, the region announces as "Nutrition Facts for [item name]", and the error and loading states are announced.
+- Screen reader (VoiceOver or NVDA): confirm the live region announces updated totals when servings change, the nutrient table reads with its row and column headers, the region announces as "Nutrition Facts for [item name]", and the error and loading states are announced. Note the live region is scoped to stay quiet on servings changes; switching datasets tears down and re-inserts the region, so check that a dataset switch does not announce the whole label.
 - Native form round-trip: submit the form in the vanilla demo, confirm it posts `servings=N`, then reset and confirm the authored value returns.
 - Windows High Contrast (forced-colors): confirm the heavy label rules stay visible.
 - Print preview: confirm the stepper is dropped and the label prints clean black on white.
