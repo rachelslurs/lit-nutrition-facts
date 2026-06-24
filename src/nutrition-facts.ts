@@ -319,6 +319,49 @@ export class NutritionFacts extends LitElement {
       white-space: nowrap;
       border: 0;
     }
+
+    .stepper input:focus-visible {
+      outline: 2px solid var(--_accent);
+      outline-offset: 2px;
+    }
+
+    /* Windows High Contrast: borders are drawn with real border properties (not
+       backgrounds), so the heavy label rules survive. Pin their color to a
+       system color so they stay visible. */
+    @media (forced-colors: active) {
+      .label,
+      .rule,
+      .nutrients th,
+      .nutrients td,
+      .vitamins li,
+      .stepper input {
+        border-color: CanvasText;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    /* Nutrition labels get printed. Drop the interactive control and force a
+       clean black-on-white label regardless of the active theme. */
+    @media print {
+      :host {
+        max-width: none;
+        color: #000;
+        background: #fff;
+      }
+      .label {
+        background: #fff;
+        border-color: #000;
+      }
+      .stepper {
+        display: none;
+      }
+    }
   `;
 
   /*
@@ -529,7 +572,10 @@ export class NutritionFacts extends LitElement {
 
         <hr class="rule thick" />
 
-        <div class="calories" part="calories">
+        <!-- Scoped to the numbers that change with servings, so a stepper
+             change announces the updated totals without re-reading the labels. -->
+        <div class="values" aria-live="polite">
+          <div class="calories" part="calories">
           <span class="calories-label">Calories</span>
           <span class="calories-value">${this.formatAmount(facts.calories)}</span>
           ${facts.calories_from_fat !== null
@@ -557,9 +603,10 @@ export class NutritionFacts extends LitElement {
           </tbody>
         </table>
 
-        <hr class="rule thick" />
+          <hr class="rule thick" />
 
-        ${this.renderVitamins(facts)}
+          ${this.renderVitamins(facts)}
+        </div>
 
         <p class="footnote">* Percent Daily Values are based on a 2,000 calorie diet.</p>
 

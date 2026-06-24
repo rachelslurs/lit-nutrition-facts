@@ -90,6 +90,16 @@ describe('<nutrition-facts> render', () => {
     expect(items).toHaveLength(4);
   });
 
+  it('scopes a polite live region to the changing values, not the controls', async () => {
+    const el = await mount(cola);
+    const live = el.shadowRoot!.querySelector('[aria-live="polite"]');
+    expect(live).not.toBeNull();
+    expect(live!.querySelector('table')).not.toBeNull();
+    expect(live!.querySelector('.calories')).not.toBeNull();
+    // The stepper control stays outside the live region so it is not chatty.
+    expect(live!.querySelector('.stepper')).toBeNull();
+  });
+
   it('escapes user-ish strings rather than injecting markup', async () => {
     const el = await mount({ ...cola, item_name: '<img src=x onerror=alert(1)>' });
     expect(el.shadowRoot!.querySelector('img')).toBeNull();
