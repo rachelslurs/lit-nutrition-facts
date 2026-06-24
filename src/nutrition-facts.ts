@@ -1,7 +1,8 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { NutritionData } from './types';
 import { dailyValuePercent, type DailyValueKey } from './scale';
+import { NutritionDataController } from './nutrition-data-controller';
 
 /** Numeric nutrient fields that carry a measured amount. */
 type NumericNutrientKey =
@@ -79,6 +80,9 @@ export class NutritionFacts extends LitElement {
   /** Pure-display mode: render the label without the serving stepper. */
   @property({ type: Boolean, reflect: true, attribute: 'hide-stepper' })
   hideStepper = false;
+
+  /** Owns fetching, loading, and error state when driven by `src`. */
+  private readonly data = new NutritionDataController(this);
 
   static override styles = css`
     :host {
@@ -251,6 +255,20 @@ export class NutritionFacts extends LitElement {
       color: var(--_text);
     }
 
+    .status {
+      margin: 0;
+      padding: 1rem 0.25rem;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .status.error {
+      font-weight: 700;
+      /* A left rule, not color alone, signals the error state. */
+      border-left: 4px solid var(--_accent);
+      padding-left: 0.75rem;
+      text-align: left;
+    }
+
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -265,9 +283,29 @@ export class NutritionFacts extends LitElement {
     }
   `;
 
-  /** Resolve the data to display. Extended in later steps to include the controller. */
+  /*
+   * Precedence is a temporal state machine, not a fixed "facts beats src":
+   *  - inline `facts` wins, suppresses fetching, and aborts any in-flight request
+   *  - a `src` change with no inline facts (re)fetches
+   *  - clearing `facts` while `src` is still set re-fetches from src
+   * Last write wins.
+   */
+  override willUpdate(changed: PropertyValues<this>): void {
+    if (!changed.has('facts') && !changed.has('src')) return;
+
+    if (this.facts !== undefined) {
+      // Inline data takes over: stop the controller so a later facts-clear
+      // re-fetches cleanly (reset clears currentSrc).
+      if (changed.has('facts')) this.data.reset();
+    } else {
+      // No inline facts: the controller drives display from src.
+      void this.data.setSrc(this.src);
+    }
+  }
+
+  /** Inline facts win; otherwise fall back to whatever the controller fetched. */
   private resolveFacts(): NutritionData | undefined {
-    return this.facts;
+    return this.facts ?? this.data.facts;
   }
 
   private formatAmount(value: number): string {
@@ -310,6 +348,19 @@ export class NutritionFacts extends LitElement {
 
   override render() {
     const facts = this.resolveFacts();
+
+    // Controller status only matters when src is driving and there is nothing
+    // better to show; inline facts always win above.
+    if (!facts && this.data.error) {
+      return html`<section class="label" part="label">
+        <p class="status error" role="alert">${this.data.error}</p>
+      </section>`;
+    }
+    if (!facts && this.data.loading) {
+      return html`<section class="label" part="label" aria-busy="true">
+        <p class="status" role="status">Loading nutrition data…</p>
+      </section>`;
+    }
     if (!facts) {
       return html`<section class="label empty" part="label">
         <p>No nutrition data provided.</p>

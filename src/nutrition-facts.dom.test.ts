@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import './nutrition-facts';
 import type { NutritionFacts } from './nutrition-facts';
 import type { NutritionData } from './types';
@@ -96,5 +96,94 @@ describe('<nutrition-facts> render', () => {
     expect(el.shadowRoot!.querySelector('.item-name')?.textContent).toContain(
       '<img src=x onerror=alert(1)>',
     );
+  });
+});
+
+describe('<nutrition-facts> src and facts precedence', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it('fetches and renders from src when no inline facts are set', async () => {
+    globalThis.fetch = vi.fn(
+      async () => ({ ok: true, status: 200, json: async () => cola }) as Response,
+    ) as typeof fetch;
+
+    const el = document.createElement('nutrition-facts');
+    el.src = '/data/cola-cherry.json';
+    document.body.append(el);
+    await el.updateComplete;
+    await flush();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('[role="region"]')?.getAttribute('aria-label')).toContain(
+      'Cola, Cherry',
+    );
+  });
+
+  it('lets inline facts win over src and skips fetching entirely', async () => {
+    const fetchSpy = vi.fn(
+      async () => ({ ok: true, status: 200, json: async () => cola }) as Response,
+    );
+    globalThis.fetch = fetchSpy as typeof fetch;
+
+    const el = document.createElement('nutrition-facts');
+    el.src = '/data/cola-cherry.json';
+    el.facts = { ...cola, item_name: 'Inline Wins' };
+    document.body.append(el);
+    await el.updateComplete;
+    await flush();
+
+    expect(el.shadowRoot!.querySelector('.item-name')?.textContent).toContain('Inline Wins');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a fetch error through an alert role', async () => {
+    globalThis.fetch = vi.fn(
+      async () => ({ ok: false, status: 500, json: async () => ({}) }) as Response,
+    ) as typeof fetch;
+
+    const el = document.createElement('nutrition-facts');
+    el.src = '/data/broken.json';
+    document.body.append(el);
+    await el.updateComplete;
+    await flush();
+    await el.updateComplete;
+
+    const alert = el.shadowRoot!.querySelector('[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toMatch(/500/);
+  });
+
+  it('re-fetches from src when inline facts are later cleared', async () => {
+    const fetchSpy = vi.fn(
+      async () => ({ ok: true, status: 200, json: async () => cola }) as Response,
+    );
+    globalThis.fetch = fetchSpy as typeof fetch;
+
+    const el = document.createElement('nutrition-facts');
+    el.src = '/data/cola-cherry.json';
+    el.facts = { ...cola, item_name: 'Inline Wins' };
+    document.body.append(el);
+    await el.updateComplete;
+    await flush();
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    // Clear inline facts: the controller should now drive from src.
+    el.facts = undefined;
+    await el.updateComplete;
+    await flush();
+    await el.updateComplete;
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(el.shadowRoot!.querySelector('.item-name')?.textContent).toContain('Cola, Cherry');
   });
 });
