@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+
+    /*
+     * Lit decorator footgun: with experimental decorators, class fields must NOT
+     * use [[define]] semantics, or the decorator's accessor is clobbered. So we
+     * pair experimentalDecorators with useDefineForClassFields:false.
+     * https://lit.dev/docs/components/decorators/#decorators-typescript
+     */
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src", "react", "vite.config.ts"]
+}
