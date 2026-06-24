@@ -288,6 +288,13 @@ export class NutritionFacts extends LitElement {
       font-weight: 700;
     }
 
+    .footer {
+      margin-top: 0.5rem;
+    }
+    .footer ::slotted(*) {
+      font-size: 0.72rem;
+    }
+
     .empty {
       font-size: 0.85rem;
       color: var(--_text);
@@ -616,7 +623,7 @@ export class NutritionFacts extends LitElement {
             </p>`
           : nothing}
 
-        <slot name="footer"></slot>
+        <div class="footer"><slot name="footer"></slot></div>
       </section>
     `;
   }

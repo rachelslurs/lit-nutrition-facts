@@ -109,6 +109,48 @@ describe('<nutrition-facts> render', () => {
   });
 });
 
+describe('<nutrition-facts> theming, parts, slot, and hide-stepper', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('exposes every documented part for external styling', async () => {
+    const el = await mount(cola);
+    const parts = [...el.shadowRoot!.querySelectorAll('[part]')].map((n) =>
+      n.getAttribute('part'),
+    );
+    for (const p of ['label', 'title', 'serving-size', 'calories', 'nutrient-table', 'stepper']) {
+      expect(parts).toContain(p);
+    }
+  });
+
+  it('hides the stepper in hide-stepper mode while keeping the label', async () => {
+    const el = document.createElement('nutrition-facts');
+    el.setAttribute('hide-stepper', '');
+    el.facts = cola;
+    document.body.append(el);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.stepper')).toBeNull();
+    expect(el.shadowRoot!.querySelector('table')).not.toBeNull();
+  });
+
+  it('projects consumer content into the footer slot', async () => {
+    const el = document.createElement('nutrition-facts');
+    el.facts = cola;
+    const note = document.createElement('p');
+    note.setAttribute('slot', 'footer');
+    note.textContent = 'Contains caffeine.';
+    el.append(note);
+    document.body.append(el);
+    await el.updateComplete;
+
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="footer"]')!;
+    const assigned = slot.assignedNodes().map((n) => n.textContent);
+    expect(assigned.join('')).toContain('Contains caffeine.');
+  });
+});
+
 describe('<nutrition-facts> serving stepper', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
