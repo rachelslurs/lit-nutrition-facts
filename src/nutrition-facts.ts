@@ -386,15 +386,25 @@ export class NutritionFacts extends LitElement {
    * Last write wins.
    */
   override willUpdate(changed: PropertyValues<this>): void {
-    if (!changed.has('facts') && !changed.has('src')) return;
+    // Enforce the [min, max] bounds for `servings` on every path, not only the
+    // stepper input: a direct property or attribute assignment is clamped here,
+    // and a non-finite value falls back to the authored default.
+    if (changed.has('servings') || changed.has('min') || changed.has('max')) {
+      const safe = Number.isFinite(this.servings)
+        ? this.#clampToRange(this.servings)
+        : this.#defaultServings;
+      if (safe !== this.servings) this.servings = safe;
+    }
 
-    if (this.facts !== undefined) {
-      // Inline data takes over: stop the controller so a later facts-clear
-      // re-fetches cleanly (reset clears currentSrc).
-      if (changed.has('facts')) this.data.reset();
-    } else {
-      // No inline facts: the controller drives display from src.
-      void this.data.setSrc(this.src);
+    if (changed.has('facts') || changed.has('src')) {
+      if (this.facts !== undefined) {
+        // Inline data takes over: stop the controller so a later facts-clear
+        // re-fetches cleanly (reset clears currentSrc).
+        if (changed.has('facts')) this.data.reset();
+      } else {
+        // No inline facts: the controller drives display from src.
+        void this.data.setSrc(this.src);
+      }
     }
   }
 
@@ -419,9 +429,13 @@ export class NutritionFacts extends LitElement {
     this.#internals.setFormValue(this.disabled ? null : String(this.servings));
   }
 
-  /** Native form reset restores the authored serving count. */
+  /**
+   * Native form reset restores the authored serving count and notifies event
+   * consumers, so a readout driven only by nf-servings-change does not go stale.
+   */
   formResetCallback(): void {
     this.servings = this.#defaultServings;
+    this.commitServings();
   }
 
   /** A surrounding fieldset/form disabling us mirrors into the disabled state. */
@@ -429,19 +443,31 @@ export class NutritionFacts extends LitElement {
     this.disabled = disabled;
   }
 
+  /**
+   * Re-fetch the current `src`, for example to retry after a load error. A no-op
+   * when the element is driven by an inline `facts` property.
+   */
+  reload(): void {
+    void this.data.reload();
+  }
+
   /** Inline facts win; otherwise fall back to whatever the controller fetched. */
   private resolveFacts(): NutritionData | undefined {
     return this.facts ?? this.data.facts;
   }
 
+  /** Clamp a finite serving count into the [min, max] range. */
+  #clampToRange(value: number): number {
+    return Math.min(this.max, Math.max(this.min, value));
+  }
+
   /**
-   * Coerce raw input into a valid serving count. Empty or non-numeric input
-   * keeps the current value; out-of-range values clamp to [min, max].
+   * Coerce raw stepper input into a valid serving count. Empty or non-numeric
+   * input keeps the current value; out-of-range values clamp to [min, max].
    */
   private clampServings(raw: string): number {
     const parsed = Number.parseFloat(raw);
-    if (!Number.isFinite(parsed)) return this.servings;
-    return Math.min(this.max, Math.max(this.min, parsed));
+    return Number.isFinite(parsed) ? this.#clampToRange(parsed) : this.servings;
   }
 
   /** Handle a committed (not per-keystroke) change from the stepper input. */
@@ -500,8 +526,8 @@ export class NutritionFacts extends LitElement {
 
   private renderNutrientRow(facts: NutritionData, row: MacroRow) {
     const amount = facts[row.key];
-    // null means "not provided": omit the row entirely. A real 0 still renders.
-    if (amount === null) return nothing;
+    // null or undefined means "not provided": omit the row. A real 0 still renders.
+    if (amount == null) return nothing;
 
     const dv = row.dv !== null ? dailyValuePercent(row.dv, amount) : null;
     return html`
@@ -515,7 +541,7 @@ export class NutritionFacts extends LitElement {
 
   private renderVitamins(facts: NutritionData) {
     const items = VITAMIN_ROWS.map((v) => ({ label: v.label, value: facts[v.key] })).filter(
-      (v): v is { label: string; value: number } => v.value !== null,
+      (v): v is { label: string; value: number } => v.value != null,
     );
     if (items.length === 0) return nothing;
     return html`
@@ -597,7 +623,7 @@ export class NutritionFacts extends LitElement {
           <span class="calories-value">
             <span class="visually-hidden">Calories </span>${this.formatAmount(facts.calories)}
           </span>
-          ${facts.calories_from_fat !== null
+          ${facts.calories_from_fat != null
             ? html`<span class="calories-fat"
                 >Calories from Fat ${this.formatAmount(facts.calories_from_fat)}</span
               >`

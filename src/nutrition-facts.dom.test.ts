@@ -246,6 +246,67 @@ describe('<nutrition-facts> serving stepper', () => {
 // happy-dom lacks real form-associated-element submission, so these assert the
 // mechanism through the recorded form value (see test/setup.ts). The native
 // <form> round-trip is verified in the browser via the vanilla demo.
+describe('<nutrition-facts> robustness', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('omits a nutrient missing from the data instead of rendering NaN', async () => {
+    const withoutSodium: NutritionData = { ...cola };
+    delete (withoutSodium as Partial<NutritionData>).sodium;
+    const el = await mount(withoutSodium);
+
+    expect(rowMap(el)['Sodium']).toBeUndefined();
+    expect(el.shadowRoot!.textContent).not.toContain('NaN');
+  });
+
+  it('clamps servings set directly via the property', async () => {
+    const el = await mount(cola);
+
+    el.servings = 1000;
+    await el.updateComplete;
+    await el.updateComplete;
+    expect(el.servings).toBe(99);
+
+    el.servings = 0;
+    await el.updateComplete;
+    await el.updateComplete;
+    expect(el.servings).toBe(0.25);
+  });
+
+  it('falls back to the default serving count when set non-finite', async () => {
+    const el = await mount(cola);
+
+    el.servings = Number.NaN;
+    await el.updateComplete;
+    await el.updateComplete;
+    expect(el.servings).toBe(1);
+  });
+
+  it('fires nf-servings-change on form reset so consumers stay in sync', async () => {
+    const el = document.createElement('nutrition-facts');
+    el.setAttribute('servings', '2');
+    el.facts = cola;
+    document.body.append(el);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('#servings-input')!;
+    input.value = '5';
+    input.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    expect(el.servings).toBe(5);
+
+    const events: CustomEvent[] = [];
+    document.addEventListener('nf-servings-change', (e) => events.push(e as CustomEvent));
+    el.formResetCallback();
+    await el.updateComplete;
+
+    expect(el.servings).toBe(2);
+    expect(events).toHaveLength(1);
+    expect(events[0].detail.servings).toBe(2);
+  });
+});
+
 describe('<nutrition-facts> form association', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
