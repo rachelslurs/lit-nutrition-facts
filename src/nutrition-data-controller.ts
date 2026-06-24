@@ -79,6 +79,15 @@ export class NutritionDataController implements ReactiveController {
     this.host.requestUpdate();
   }
 
+  /**
+   * Force a re-fetch of the current src. Unlike setSrc, this does not short
+   * circuit on an unchanged URL, so it is the retry path after a failed load.
+   * No-op when no src is set.
+   */
+  reload(): Promise<void> {
+    return this.currentSrc ? this.load(this.currentSrc) : Promise.resolve();
+  }
+
   private async load(src: string): Promise<void> {
     this.abortController?.abort();
     const abort = new AbortController();

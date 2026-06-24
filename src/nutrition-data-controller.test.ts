@@ -159,4 +159,44 @@ describe('NutritionDataController', () => {
     expect(controller.error).toBeUndefined();
     expect(controller.loading).toBe(false);
   });
+
+  it('rejects JSON where a nutrient has the wrong type', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      okResponse({ ...cola, sodium: '25' }),
+    ) as typeof fetch;
+    const controller = new NutritionDataController(new FakeHost());
+
+    await controller.setSrc('/wrong-type.json');
+    expect(controller.facts).toBeUndefined();
+    expect(controller.error).toMatch(/schema/);
+  });
+
+  it('accepts JSON that omits an optional nutrient', async () => {
+    const withoutSodium: Record<string, unknown> = { ...cola };
+    delete withoutSodium.sodium;
+    globalThis.fetch = vi.fn(async () => okResponse(withoutSodium)) as typeof fetch;
+    const controller = new NutritionDataController(new FakeHost());
+
+    await controller.setSrc('/omitted.json');
+    expect(controller.error).toBeUndefined();
+    expect(controller.facts?.item_name).toBe('Cola, Cherry');
+  });
+
+  it('reload re-fetches the same src after a failed load', async () => {
+    let calls = 0;
+    globalThis.fetch = vi.fn(async () => {
+      calls += 1;
+      return calls === 1
+        ? ({ ok: false, status: 500, json: async () => ({}) } as Response)
+        : okResponse(cola);
+    }) as typeof fetch;
+    const controller = new NutritionDataController(new FakeHost());
+
+    await controller.setSrc('/data.json');
+    expect(controller.error).toMatch(/500/);
+
+    await controller.reload();
+    expect(controller.error).toBeUndefined();
+    expect(controller.facts?.item_name).toBe('Cola, Cherry');
+  });
 });
