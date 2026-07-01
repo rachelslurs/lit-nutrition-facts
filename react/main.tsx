@@ -65,6 +65,22 @@ function App(): React.JSX.Element {
 
       <p className="links">
         <a href="../">Back to the vanilla demo</a>
+        &middot;{' '}
+        <a
+          href="https://github.com/rachelslurs/lit-nutrition-facts/blob/main/react/main.tsx"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View source
+        </a>
+        &middot;{' '}
+        <a
+          href="https://github.com/rachelslurs/lit-nutrition-facts"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          README
+        </a>
       </p>
     </main>
   );
