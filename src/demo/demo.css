@@ -113,6 +113,9 @@ button:focus-visible {
 
 .links {
   margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .links a {
